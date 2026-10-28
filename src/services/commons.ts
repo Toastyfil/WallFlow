@@ -33,11 +33,6 @@ function prettyTitle(title: string): string {
     .replace(/_/g, ' ')
 }
 
-/** Commons thumbnails follow a `.../640px-Name.jpg` pattern; larger sizes reuse it. */
-function resizeThumb(thumbUrl: string, width: number): string {
-  return thumbUrl.replace(/\/(\d+)px-/, `/${width}px-`)
-}
-
 function matchesOrientation(width: number, height: number, orientation?: Orientation): boolean {
   if (!orientation || orientation === 'any') return true
   if (orientation === 'landscape') return width >= height
@@ -63,7 +58,10 @@ export async function searchCommons(
       format: 'json',
       prop: 'imageinfo',
       iiprop: 'url|size|extmetadata',
-      iiurlwidth: 640,
+      // Wikimedia only serves the thumbnail URLs it generated itself; rewriting
+      // the `320px-` segment into another width returns HTTP 400, so the width
+      // has to be requested here and the returned URL used as-is.
+      iiurlwidth: 1280,
       generator: 'search',
       gsrsearch: `filetype:bitmap ${query || 'landscape'}`,
       gsrnamespace: 6,
@@ -93,8 +91,8 @@ export async function searchCommons(
         author: author || 'Wikimedia Commons',
         pageUrl: `https://commons.wikimedia.org/wiki/${encodeURIComponent(page.title)}`,
         thumbUrl: info.thumburl,
-        previewUrl: resizeThumb(info.thumburl, 1280),
-        fullUrl: resizeThumb(info.thumburl, 2560),
+        previewUrl: info.thumburl,
+        fullUrl: info.url || info.thumburl,
         width: info.width,
         height: info.height,
       }
