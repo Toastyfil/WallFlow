@@ -6,14 +6,6 @@ Built with Electron + React + Tailwind, packaged with electron-builder.
 
 ![Explore](screenshots/explore-top.jpg)
 
-## Install
-
-Download the latest `WallFlow-<version>-setup.exe` from [Releases](../../releases) and run it.
-
-The installer is self-contained — no Node.js, no accounts, no API keys. It installs per-user (no admin prompt), adds a desktop shortcut and a normal uninstall entry.
-
-> The build is unsigned, so Windows SmartScreen will show "Windows protected your PC" on first run. Choose **More info → Run anyway**.
-
 ## Features
 
 - **Browse & search** — responsive grid, keyword search, categories and orientation filters
@@ -36,9 +28,10 @@ Everything is browsable **without accounts or API keys**:
 | [Wikimedia Commons](https://commons.wikimedia.org) | 100M+ | Freely licensed photography and art |
 | Your feeds | — | RSS feeds and direct image/video links |
 
-Pexels and Pixabay require a personal API key for every user, and Unsplash's keyless `napi` endpoint
-is now bot-gated (401), so v1 ships with the two keyless catalogs above instead. Adding a keyed source
-is one file in `src/services/` plus one entry in `src/types/wallpaper.ts`.
+The original brief also listed Unsplash, Pexels and Pixabay. Pexels and Pixabay require a personal
+API key for every user, and Unsplash's keyless `napi` endpoint is now bot-gated (401), so v1 ships
+with the two keyless catalogs above instead. Adding a keyed source is one file in `src/services/`
+plus one entry in `src/types/wallpaper.ts`.
 
 ## Requirements
 
@@ -50,19 +43,14 @@ is one file in `src/services/` plus one entry in `src/types/wallpaper.ts`.
 ```bash
 npm install       # install dependencies
 npm run dev       # Vite + Electron with hot reload
-npm run build     # build the renderer + main process, then package dist/WallFlow-1.0.0-setup.exe
+npm run build     # build the renderer + main process, then package dist/WallFlow-<version>-setup.exe
 npm run typecheck # renderer and main-process TypeScript checks
 npm run icon      # regenerate build/icon.png and build/icon.ico
 ```
 
-`npm run build` writes the NSIS installer to `dist/`.
-
-## Releasing
-
-1. Bump `version` in `package.json` (it drives the installer filename and the shortcut metadata).
-2. `npm run build` and check the installer from `dist/` actually launches.
-3. Tag the commit (`git tag v1.0.0 && git push --tags`) and attach `dist/WallFlow-<version>-setup.exe`
-   to a GitHub Release.
+`npm run build` writes the NSIS installer to `dist/`. It is a per-user install with a desktop
+shortcut. The clean, ready-to-ship copy of the installer lives in `installer/` (only the `.exe`,
+nothing else).
 
 ## Project structure
 
@@ -114,7 +102,3 @@ scripts/           dev runner, esbuild build, icon generator
 - The app is single-instance and remembers the last applied wallpaper ("Applied 2m ago" in the
   sidebar).
 - `Ctrl K` focuses the search box, `Esc` closes the preview.
-
-## License
-
-MIT — see [LICENSE](LICENSE).
