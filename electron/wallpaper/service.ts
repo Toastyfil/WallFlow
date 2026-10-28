@@ -27,6 +27,33 @@ function record(store: DataStore, active: ActiveWallpaper | null): void {
   changeListener?.(active)
 }
 
+/**
+ * Downloads the best available file for an image wallpaper. Sources occasionally
+ * hand out a URL that their CDN rejects (Wikimedia returns 400 for thumbnail
+ * widths it did not generate), so every known variant is tried before giving up.
+ */
+async function downloadImage(wallpaper: Wallpaper): Promise<string> {
+  const candidates = [wallpaper.fullUrl, wallpaper.previewUrl, wallpaper.thumbUrl].filter(
+    (url, index, list): url is string => Boolean(url) && list.indexOf(url) === index,
+  )
+
+  if (candidates.length === 0) throw new Error('This wallpaper has no downloadable image')
+
+  let lastError: unknown
+  for (const url of candidates) {
+    try {
+      return await downloadMedia(url, wallpaper.id, 'image')
+    } catch (error) {
+      lastError = error
+      console.warn('[wallflow] download failed, trying next size:', url, (error as Error).message)
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error('Could not download this wallpaper')
+}
+
 export async function applyWallpaper(
   store: DataStore,
   wallpaper: Wallpaper,
@@ -42,7 +69,7 @@ export async function applyWallpaper(
       // leaves a matching background instead of the previous one.
       if (wallpaper.fullUrl) {
         try {
-          const poster = await downloadMedia(wallpaper.fullUrl, `${wallpaper.id}:poster`, 'image')
+          const poster = await downloadImage(wallpaper)
           await setDesktopWallpaper(poster)
         } catch (error) {
           console.warn('[wallflow] poster wallpaper failed:', (error as Error).message)
@@ -52,7 +79,7 @@ export async function applyWallpaper(
       const file = await downloadMedia(wallpaper.videoUrl, wallpaper.id, 'video')
       playVideoWallpaper(file, settings.videoMuted)
     } else {
-      const file = await downloadMedia(wallpaper.fullUrl || wallpaper.previewUrl, wallpaper.id, 'image')
+      const file = await downloadImage(wallpaper)
       await setDesktopWallpaper(file)
       stopVideoWallpaper()
     }
