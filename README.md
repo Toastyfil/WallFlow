@@ -16,6 +16,7 @@ Built with Electron + React + Tailwind, packaged with electron-builder.
 - **Favorites & collections** — saved locally in SQLite
 - **Auto-rotate** — cycle a collection or your favorites every 5–240 minutes
 - **Display resolution** — list the modes your monitor reports and switch resolution from the app
+- **Themes** — six dark palettes (Midnight, Slate, Graphite, Plum, Moss, Ember) that also recolour the native title bar
 - **Custom sources** — add RSS feeds or a direct image/video URL
 
 ## Where the wallpapers come from
@@ -66,7 +67,7 @@ src/
   services/        source clients (wallhaven, commons, custom) — main process only
   store/           zustand stores (browse, library, settings, ui, toasts)
   types/           wallpaper + IPC contracts
-  utils/           cn, formatters, apply hook
+  utils/           cn, formatters, apply hook, theme palettes
 electron/
   main.ts          app lifecycle and window
   preload.ts       context-isolated `window.wallflow` bridge

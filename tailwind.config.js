@@ -5,17 +5,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        base: '#0a0a0b',
-        surface: '#0f0f11',
-        card: '#141416',
-        elevated: '#1b1b1e',
-        hairline: 'rgba(255,255,255,0.075)',
-        muted: '#8b8b93',
-        subtle: '#63636b',
+        // Driven by the palette in src/utils/themes.ts; defaults live in index.css.
+        base: 'rgb(var(--wf-base) / <alpha-value>)',
+        surface: 'rgb(var(--wf-surface) / <alpha-value>)',
+        card: 'rgb(var(--wf-card) / <alpha-value>)',
+        elevated: 'rgb(var(--wf-elevated) / <alpha-value>)',
+        hairline: 'rgb(var(--wf-line) / 0.08)',
+        muted: 'rgb(var(--wf-muted) / <alpha-value>)',
+        subtle: 'rgb(var(--wf-subtle) / <alpha-value>)',
         accent: {
-          DEFAULT: '#7b7cf0',
-          soft: '#aaabf7',
-          blue: '#5b8def',
+          DEFAULT: 'rgb(var(--wf-accent) / <alpha-value>)',
+          soft: 'rgb(var(--wf-accent-soft) / <alpha-value>)',
+          blue: 'rgb(var(--wf-accent-alt) / <alpha-value>)',
         },
       },
       fontFamily: {

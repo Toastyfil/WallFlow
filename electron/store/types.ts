@@ -31,6 +31,7 @@ export interface DataStore {
 }
 
 const SOURCE_IDS = ['wallhaven', 'commons', 'custom']
+const THEME_IDS = ['midnight', 'slate', 'graphite', 'plum', 'moss', 'ember']
 
 /** Fills in anything missing from persisted settings so upgrades never break the UI. */
 export function normalizeSettings(raw: unknown): Settings {
@@ -51,6 +52,9 @@ export function normalizeSettings(raw: unknown): Settings {
   )
 
   return {
+    theme: THEME_IDS.includes(input.theme as string)
+      ? (input.theme as Settings['theme'])
+      : DEFAULT_SETTINGS.theme,
     enabledSources: enabledSources.length > 0 ? enabledSources : DEFAULT_SETTINGS.enabledSources,
     orientation: ['any', 'landscape', 'portrait', 'square'].includes(input.orientation as string)
       ? (input.orientation as Settings['orientation'])

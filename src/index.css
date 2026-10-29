@@ -3,8 +3,19 @@
 @tailwind utilities;
 
 @layer base {
+  /* Midnight palette. applyTheme() overwrites these on :root when a theme is picked. */
   :root {
     color-scheme: dark;
+    --wf-base: 10 10 11;
+    --wf-surface: 15 15 17;
+    --wf-card: 20 20 22;
+    --wf-elevated: 27 27 30;
+    --wf-line: 255 255 255;
+    --wf-muted: 139 139 147;
+    --wf-subtle: 99 99 107;
+    --wf-accent: 123 124 240;
+    --wf-accent-soft: 170 171 247;
+    --wf-accent-alt: 91 141 239;
   }
 
   html,
