@@ -4,6 +4,7 @@ export type MediaKind = 'image' | 'video'
 export type Orientation = 'any' | 'landscape' | 'portrait' | 'square'
 export type MinResolution = 'any' | '1080p' | '1440p' | '4k'
 export type CustomSourceKind = 'rss' | 'direct'
+export type ThemeId = 'midnight' | 'slate' | 'graphite' | 'plum' | 'moss' | 'ember'
 
 export interface Wallpaper {
   /** Globally unique: `${source}:${sourceItemId}` */
@@ -48,6 +49,7 @@ export interface SearchResult {
 }
 
 export interface Settings {
+  theme: ThemeId
   enabledSources: SourceId[]
   orientation: Orientation
   minResolution: MinResolution
@@ -61,6 +63,7 @@ export interface Settings {
 }
 
 export interface SettingsPatch {
+  theme?: ThemeId
   enabledSources?: SourceId[]
   orientation?: Orientation
   minResolution?: MinResolution
@@ -115,6 +118,7 @@ export interface ApplyResult {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  theme: 'midnight',
   enabledSources: ['wallhaven', 'commons'],
   orientation: 'any',
   minResolution: 'any',

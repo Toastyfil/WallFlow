@@ -1,4 +1,4 @@
-import { ipcMain, shell, app } from 'electron'
+import { ipcMain, shell, app, BrowserWindow } from 'electron'
 import { searchAll, testSource } from '../src/services'
 import type {
   CustomSourceKind,
@@ -12,6 +12,7 @@ import { getDisplayInfo, setDisplayMode } from './display'
 import { mergeSettings } from './store/types'
 import type { DataStore } from './store/types'
 import { cacheDir } from './utils/download'
+import { getTheme } from '../src/utils/themes'
 import {
   applyWallpaper,
   clearWallpaper,
@@ -62,13 +63,30 @@ export function registerIpcHandlers(store: DataStore, rotation: RotationService)
 
   ipcMain.handle('sources:test', async (_event, source: SourceId) => testSource(source, context()))
 
+
   // ---------- settings ----------
   ipcMain.handle('settings:get', () => store.getSettings())
 
-  ipcMain.handle('settings:update', (_event, patch: SettingsPatch) => {
-    const next = mergeSettings(store.getSettings(), (patch ?? {}) as Partial<Settings>)
+  ipcMain.handle('settings:update', (event, patch: SettingsPatch) => {
+    const previous = store.getSettings()
+    const next = mergeSettings(previous, (patch ?? {}) as Partial<Settings>)
     store.saveSettings(next)
     rotation.sync()
+
+    // Keep the native caption strip in step with the palette.
+    const senderWindow = BrowserWindow.fromWebContents(event.sender)
+    if (senderWindow && next.theme !== previous.theme) {
+      const palette = getTheme(next.theme)
+      if (process.platform === 'win32') {
+        senderWindow.setTitleBarOverlay({
+          color: palette.base,
+          symbolColor: palette.muted,
+          height: 48,
+        })
+      }
+      senderWindow.setBackgroundColor(palette.base)
+    }
+
     return next
   })
 

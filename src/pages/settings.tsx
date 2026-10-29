@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import { FolderOpen, Link2, Loader2, Plus, RotateCw, Rss, Trash2 } from 'lucide-react'
+import { Check, FolderOpen, Link2, Loader2, Plus, RotateCw, Rss, Trash2 } from 'lucide-react'
 import { AddSourceDialog } from '@/components/settings/add-source-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,7 @@ import { useSettingsStore } from '@/store/useSettingsStore'
 import { toast } from '@/store/useToastStore'
 import { cn } from '@/utils/cn'
 import { formatInterval, hostOf } from '@/utils/format'
+import { THEMES } from '@/utils/themes'
 import { SOURCE_META } from '@/types/wallpaper'
 import type { AppInfo, BuiltInSourceId, MinResolution, Orientation, SourceId } from '@/types/wallpaper'
 import type { DisplayInfo, DisplayMode } from '@/types/ipc'
@@ -227,6 +228,55 @@ export function SettingsPage() {
         <Row title="Mute video wallpapers" description="Looping videos play without sound.">
           <Switch checked={settings.videoMuted} onCheckedChange={(checked) => void update({ videoMuted: checked })} />
         </Row>
+      </Section>
+
+      <Section
+        title="Appearance"
+        description="Colours for the app itself. Your wallpaper keeps its own."
+      >
+        <div className="grid grid-cols-2 gap-2 py-3.5 sm:grid-cols-3">
+          {THEMES.map((theme) => {
+            const selected = settings.theme === theme.id
+            return (
+              <button
+                key={theme.id}
+                type="button"
+                title={theme.hint}
+                aria-pressed={selected}
+                onClick={() => void update({ theme: theme.id })}
+                className={cn(
+                  'rounded-lg border p-1.5 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+                  selected
+                    ? 'border-accent/60 bg-white/[0.04]'
+                    : 'border-hairline hover:border-white/[0.14] hover:bg-white/[0.02]',
+                )}
+              >
+                <div
+                  className="flex h-12 gap-1 rounded-md p-1.5"
+                  style={{
+                    backgroundColor: theme.base,
+                    boxShadow: `inset 0 0 0 1px ${theme.line}12`,
+                  }}
+                >
+                  <div className="w-2.5 rounded-sm" style={{ backgroundColor: theme.surface }} />
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <div className="h-1.5 w-7 rounded-full" style={{ backgroundColor: theme.accent }} />
+                    <div className="flex flex-1 gap-1">
+                      <div className="flex-1 rounded-sm" style={{ backgroundColor: theme.card }} />
+                      <div className="flex-1 rounded-sm" style={{ backgroundColor: theme.card }} />
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-1.5 flex items-center justify-between px-0.5">
+                  <span className={cn('text-[11.5px]', selected ? 'text-white' : 'text-white/65')}>
+                    {theme.label}
+                  </span>
+                  {selected ? <Check className="h-3 w-3 text-accent-soft" /> : null}
+                </div>
+              </button>
+            )
+          })}
+        </div>
       </Section>
 
       <Section

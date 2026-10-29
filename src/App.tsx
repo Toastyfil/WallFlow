@@ -12,12 +12,18 @@ import { SettingsPage } from '@/pages/settings'
 import { useLibraryStore } from '@/store/useLibraryStore'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { useUiStore } from '@/store/useUiStore'
+import { applyTheme } from '@/utils/themes'
 
 export default function App() {
   const page = useUiStore((state) => state.page)
   const setActive = useUiStore((state) => state.setActive)
   const loadSettings = useSettingsStore((state) => state.load)
   const loadLibrary = useLibraryStore((state) => state.loadAll)
+  const theme = useSettingsStore((state) => state.settings?.theme)
+
+  useEffect(() => {
+    if (theme) applyTheme(theme)
+  }, [theme])
 
   useEffect(() => {
     void loadSettings()
