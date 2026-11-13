@@ -1,7 +1,8 @@
 import axios from 'axios'
 
 export const http = axios.create({
-  timeout: 20000,
+  // Searches race each source against a 4s budget, so nothing should sit here long.
+  timeout: 10000,
   headers: {
     'User-Agent': 'WallFlow/1.0 (desktop wallpaper app)',
     Accept: 'application/json, text/plain, */*',
@@ -19,7 +20,7 @@ export function describeError(error: unknown, fallback = 'Request failed'): stri
     const first = data?.errors?.[0]
     if (typeof first === 'string') return first
     if (data?.error) return String(data.error)
-    if (error.code === 'ECONNABORTED') return 'Request timed out'
+    if (error.code === 'ECONNABORTED') return 'Source took too long'
     return error.message
   }
   return error instanceof Error ? error.message : fallback

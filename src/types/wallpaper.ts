@@ -1,5 +1,24 @@
-export type SourceId = 'wallhaven' | 'commons' | 'custom'
+export type SourceId =
+  | 'wallhaven'
+  | 'commons'
+  | 'bing'
+  | 'konachan'
+  | 'safebooru'
+  | 'deviantart'
+  | 'openverse'
+  | 'custom'
 export type BuiltInSourceId = Exclude<SourceId, 'custom'>
+
+/** Catalogs shipped with the app, in the order Settings lists them. */
+export const BUILT_IN_SOURCE_IDS: BuiltInSourceId[] = [
+  'wallhaven',
+  'commons',
+  'bing',
+  'konachan',
+  'safebooru',
+  'deviantart',
+  'openverse',
+]
 export type MediaKind = 'image' | 'video'
 export type Orientation = 'any' | 'landscape' | 'portrait' | 'square'
 export type MinResolution = 'any' | '1080p' | '1440p' | '4k'
@@ -39,6 +58,8 @@ export interface SearchParams {
   perPage?: number
   source?: SourceId | 'all'
   minResolution?: MinResolution
+  /** Echoed back with streamed partial results so stale searches can be ignored. */
+  requestId?: string
 }
 
 export interface SearchResult {
@@ -49,6 +70,8 @@ export interface SearchResult {
 }
 
 export interface Settings {
+  /** Persisted schema version; bumped when new catalogs join the defaults. */
+  version: number
   theme: ThemeId
   enabledSources: SourceId[]
   orientation: Orientation
@@ -117,9 +140,12 @@ export interface ApplyResult {
   message: string
 }
 
+export const SETTINGS_VERSION = 4
+
 export const DEFAULT_SETTINGS: Settings = {
+  version: SETTINGS_VERSION,
   theme: 'midnight',
-  enabledSources: ['wallhaven', 'commons'],
+  enabledSources: ['wallhaven', 'commons', 'bing', 'konachan', 'safebooru', 'deviantart'],
   orientation: 'any',
   minResolution: 'any',
   videoMuted: true,
@@ -145,6 +171,36 @@ export const SOURCE_META: Record<
     label: 'Wikimedia',
     blurb: 'Openly licensed photos & art',
     catalog: '100M+',
+    requiresKey: false,
+  },
+  konachan: {
+    label: 'Konachan',
+    blurb: 'Anime, game art and illustrations · SFW',
+    catalog: '1M+',
+    requiresKey: false,
+  },
+  safebooru: {
+    label: 'Safebooru',
+    blurb: 'Anime & game fan art · SFW',
+    catalog: '5M+',
+    requiresKey: false,
+  },
+  deviantart: {
+    label: 'DeviantArt',
+    blurb: 'Fan art & digital art · ~1200px previews',
+    catalog: '500M+',
+    requiresKey: false,
+  },
+  openverse: {
+    label: 'Openverse',
+    blurb: 'CC photos from 90+ collections · 200 lookups a day',
+    catalog: '900M+',
+    requiresKey: false,
+  },
+  bing: {
+    label: 'Bing daily',
+    blurb: 'One curated 4K landscape a day',
+    catalog: '8',
     requiresKey: false,
   },
   custom: {

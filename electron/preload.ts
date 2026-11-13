@@ -1,9 +1,14 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { WallFlowApi } from '../src/types/ipc'
+import type { SearchPartial, WallFlowApi } from '../src/types/ipc'
 import type { ActiveWallpaper } from '../src/types/wallpaper'
 
 const api: WallFlowApi = {
   search: (params) => ipcRenderer.invoke('sources:search', params),
+  onSearchPartial: (handler) => {
+    const listener = (_event: unknown, partial: SearchPartial) => handler(partial)
+    ipcRenderer.on('sources:partial', listener)
+    return () => ipcRenderer.removeListener('sources:partial', listener)
+  },
   testSource: (source) => ipcRenderer.invoke('sources:test', source),
 
   settings: {

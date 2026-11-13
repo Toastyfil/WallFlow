@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS } from '../../src/types/wallpaper'
+import { DEFAULT_SETTINGS, SETTINGS_VERSION } from '../../src/types/wallpaper'
 import type { Collection, CustomSource, Settings, SettingsPatch, Wallpaper } from '../../src/types/wallpaper'
 
 export interface DataStore {
@@ -30,7 +30,16 @@ export interface DataStore {
   close(): void
 }
 
-const SOURCE_IDS = ['wallhaven', 'commons', 'custom']
+const SOURCE_IDS = [
+  'wallhaven',
+  'commons',
+  'bing',
+  'konachan',
+  'safebooru',
+  'deviantart',
+  'openverse',
+  'custom',
+]
 const THEME_IDS = ['midnight', 'slate', 'graphite', 'plum', 'moss', 'ember']
 
 /** Fills in anything missing from persisted settings so upgrades never break the UI. */
@@ -38,20 +47,30 @@ export function normalizeSettings(raw: unknown): Settings {
   const input = (raw && typeof raw === 'object' ? raw : {}) as Partial<Settings>
   const rotation = (input.rotation ?? {}) as Partial<Settings['rotation']>
 
+  const version = typeof input.version === 'number' ? input.version : 1
   const storedSources = Array.isArray(input.enabledSources)
     ? input.enabledSources
     : DEFAULT_SETTINGS.enabledSources
 
-  // `openverse` was replaced by Wikimedia Commons; carry the choice over.
-  const migratedSources = storedSources.map((source) =>
-    (source as string) === 'openverse' ? 'commons' : source,
-  )
-
-  const enabledSources = migratedSources.filter(
+  // Drop ids this build no longer ships, keeping whatever order the user chose.
+  let enabledSources = storedSources.filter(
     (source): source is Settings['enabledSources'][number] => SOURCE_IDS.includes(source as string),
   )
 
+  // v3 replaced the niche NASA catalog with the Bing and Konachan feeds. Turn
+  // those on for installs saved before they existed; later disables are trusted
+  // because the patch is written back with the current version.
+  if (version < 3) {
+    enabledSources = [...new Set([...enabledSources, 'bing' as const, 'konachan' as const])]
+  }
+
+  // v4 added the Safebooru and DeviantArt boards for anime and game art.
+  if (version < 4) {
+    enabledSources = [...new Set([...enabledSources, 'safebooru' as const, 'deviantart' as const])]
+  }
+
   return {
+    version: SETTINGS_VERSION,
     theme: THEME_IDS.includes(input.theme as string)
       ? (input.theme as Settings['theme'])
       : DEFAULT_SETTINGS.theme,

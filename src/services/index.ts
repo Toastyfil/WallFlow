@@ -1,5 +1,6 @@
 import { RESOLUTION_FILTERS } from '../types/wallpaper'
 import type {
+  BuiltInSourceId,
   CustomSource,
   SearchParams,
   SearchResult,
@@ -8,14 +9,63 @@ import type {
   SourceId,
   Wallpaper,
 } from '../types/wallpaper'
+import { searchBing } from './bing'
+import { searchKonachan } from './booru'
 import { fetchCustomSource } from './custom'
+import { searchDeviantArt } from './deviantart'
 import { describeError } from './http'
 import { searchCommons } from './commons'
+import { searchOpenverse } from './openverse'
+import { searchSafebooru } from './safebooru'
 import { searchWallhaven } from './wallhaven'
 
 export interface SearchContext {
   settings: Settings
   customSources: CustomSource[]
+}
+
+/** Every keyless catalog the app can query, keyed by source id. */
+const BUILT_IN_CLIENTS: Record<
+  BuiltInSourceId,
+  (params: SearchParams) => Promise<{ items: Wallpaper[]; hasMore: boolean }>
+> = {
+  wallhaven: searchWallhaven,
+  commons: searchCommons,
+  bing: searchBing,
+  konachan: searchKonachan,
+  safebooru: searchSafebooru,
+  deviantart: searchDeviantArt,
+  openverse: searchOpenverse,
+}
+
+function isBuiltIn(source: SourceId): source is BuiltInSourceId {
+  return source !== 'custom' && source in BUILT_IN_CLIENTS
+}
+
+/** One slow catalog must not hold the whole feed hostage. */
+const SOURCE_TIMEOUT_MS = 4000
+
+class SourceTimeoutError extends Error {
+  constructor() {
+    super('Source timed out')
+    this.name = 'SourceTimeoutError'
+  }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new SourceTimeoutError()), ms)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error: unknown) => {
+        clearTimeout(timer)
+        reject(error)
+      },
+    )
+  })
 }
 
 function interleave(lists: Wallpaper[][]): Wallpaper[] {
@@ -49,12 +99,26 @@ function meetsResolution(item: Wallpaper, settings: Settings): boolean {
   return Math.min(item.width || 0, item.height || 0) >= min * 0.66
 }
 
-export async function searchAll(params: SearchParams, context: SearchContext): Promise<SearchResult> {
+export async function searchAll(
+  params: SearchParams,
+  context: SearchContext,
+  onProgress?: (items: Wallpaper[]) => void,
+): Promise<SearchResult> {
   const { settings, customSources } = context
-  const requested = params.source && params.source !== 'all' ? [params.source] : settings.enabledSources
+  const requested: SourceId[] = (
+    params.source && params.source !== 'all' ? [params.source] : settings.enabledSources
+  ).filter((source) => source === 'custom' || isBuiltIn(source))
   const errors: SourceError[] = []
   const results: Wallpaper[][] = []
   const tasks: Array<Promise<void>> = []
+  const timedOut: SourceId[] = []
+  const perPage = params.perPage ?? 24
+
+  // Send a merged snapshot every time a catalog lands so the grid fills in as
+  // answers arrive instead of staying blank until the slowest source replies.
+  const merge = () =>
+    dedupe(interleave(results)).filter((item) => meetsResolution(item, settings)).slice(0, perPage)
+  const emit = () => onProgress?.(merge())
 
   const includeCustom = requested.includes('custom')
   if (includeCustom) {
@@ -64,26 +128,36 @@ export async function searchAll(params: SearchParams, context: SearchContext): P
     }
     for (const feed of feeds) {
       tasks.push(
-        fetchCustomSource(feed, params.query)
+        withTimeout(fetchCustomSource(feed, params.query), SOURCE_TIMEOUT_MS)
           .then((items) => {
             results.push(items)
+            emit()
           })
           .catch((error: unknown) => {
+            if (error instanceof SourceTimeoutError) {
+              timedOut.push('custom')
+              return
+            }
             errors.push({ source: 'custom', message: `${feed.name}: ${describeError(error)}` })
           }),
       )
     }
   }
 
-  const runBuiltIn = async (source: BuiltInSource) => {
-    const { items } = source === 'wallhaven' ? await searchWallhaven(params) : await searchCommons(params)
+  const runBuiltIn = async (source: BuiltInSourceId) => {
+    const { items } = await withTimeout(BUILT_IN_CLIENTS[source](params), SOURCE_TIMEOUT_MS)
     results.push(items)
+    emit()
   }
 
   for (const source of requested) {
-    if (source === 'custom') continue
+    if (!isBuiltIn(source)) continue
     tasks.push(
       runBuiltIn(source).catch((error: unknown) => {
+        if (error instanceof SourceTimeoutError) {
+          timedOut.push(source)
+          return
+        }
         errors.push({ source, message: describeError(error) })
       }),
     )
@@ -91,17 +165,22 @@ export async function searchAll(params: SearchParams, context: SearchContext): P
 
   await Promise.all(tasks)
 
-  const merged = dedupe(interleave(results)).filter((item) => meetsResolution(item, settings))
+  // Each catalog answers with a full page of its own hits; `merge` trims the
+  // interleaved mix back to one page so more sources add variety, not volume.
+  const items = merge()
+
+  // A timeout is not worth an error line while other catalogs are answering.
+  if (items.length === 0 && timedOut.length > 0) {
+    errors.push({ source: timedOut[0], message: 'Sources are slow to respond — try again' })
+  }
 
   return {
-    items: merged,
+    items,
     page: params.page ?? 1,
-    hasMore: results.some((list) => list.length >= (params.perPage ?? 24)),
+    hasMore: results.some((list) => list.length >= perPage),
     errors,
   }
 }
-
-type BuiltInSource = Exclude<SourceId, 'custom'>
 
 export async function testSource(
   source: SourceId,
@@ -118,11 +197,12 @@ export async function testSource(
     }
   }
 
+  if (!isBuiltIn(source)) return { ok: false, message: 'Unknown source' }
+
   const params: SearchParams = { query: 'nature', perPage: 3 }
 
   try {
-    const { items } =
-      source === 'wallhaven' ? await searchWallhaven(params) : await searchCommons(params)
+    const { items } = await BUILT_IN_CLIENTS[source](params)
     return { ok: items.length > 0, message: `${items.length} wallpapers available` }
   } catch (error) {
     return { ok: false, message: describeError(error) }
