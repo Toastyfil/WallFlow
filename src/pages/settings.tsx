@@ -14,11 +14,9 @@ import { toast } from '@/store/useToastStore'
 import { cn } from '@/utils/cn'
 import { formatInterval, hostOf } from '@/utils/format'
 import { THEMES } from '@/utils/themes'
-import { SOURCE_META } from '@/types/wallpaper'
-import type { AppInfo, BuiltInSourceId, MinResolution, Orientation, SourceId } from '@/types/wallpaper'
+import { SOURCE_META, BUILT_IN_SOURCE_IDS } from '@/types/wallpaper'
+import type { AppInfo, MinResolution, Orientation, SourceId } from '@/types/wallpaper'
 import type { DisplayInfo, DisplayMode } from '@/types/ipc'
-
-const BUILT_IN_SOURCES: BuiltInSourceId[] = ['wallhaven', 'commons']
 
 function Section({
   title,
@@ -168,7 +166,7 @@ export function SettingsPage() {
       </div>
 
       <Section title="Sources" description="No accounts, no keys. Toggle the catalogs you want to browse.">
-        {BUILT_IN_SOURCES.map((source) => {
+        {BUILT_IN_SOURCE_IDS.map((source) => {
           const meta = SOURCE_META[source]
           return (
             <div key={source} className="flex items-center justify-between gap-4 border-b border-hairline py-3 last:border-0">

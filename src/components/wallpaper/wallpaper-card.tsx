@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { BookmarkPlus, Heart, Image as ImageIcon, Loader2, MonitorPlay, Play, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -15,7 +16,7 @@ interface WallpaperCardProps {
   onRemove?: (wallpaper: Wallpaper) => void
 }
 
-export function WallpaperCard({ wallpaper, onRemove }: WallpaperCardProps) {
+function WallpaperCardView({ wallpaper, onRemove }: WallpaperCardProps) {
   const openPreview = useUiStore((state) => state.openPreview)
   const setSaveTarget = useUiStore((state) => state.setSaveTarget)
   const favorite = useLibraryStore((state) => state.favoriteIds.includes(wallpaper.id))
@@ -45,6 +46,7 @@ export function WallpaperCard({ wallpaper, onRemove }: WallpaperCardProps) {
             src={wallpaper.thumbUrl}
             alt={wallpaper.title}
             loading="lazy"
+            decoding="async"
             draggable={false}
             className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.04]"
           />
@@ -136,3 +138,6 @@ export function WallpaperCard({ wallpaper, onRemove }: WallpaperCardProps) {
     </article>
   )
 }
+
+/** Cards are pure given their wallpaper, so skip re-rendering the whole grid on page updates. */
+export const WallpaperCard = memo(WallpaperCardView)

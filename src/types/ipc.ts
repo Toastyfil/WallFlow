@@ -24,8 +24,15 @@ export interface DisplayInfo {
   modes: DisplayMode[]
 }
 
+export interface SearchPartial {
+  requestId: string
+  items: Wallpaper[]
+}
+
 export interface WallFlowApi {
   search(params: SearchParams): Promise<SearchResult>
+  /** Fires as each catalog answers, before the final search result arrives. */
+  onSearchPartial(handler: (partial: SearchPartial) => void): () => void
   testSource(source: SourceId): Promise<{ ok: boolean; message: string }>
 
   settings: {

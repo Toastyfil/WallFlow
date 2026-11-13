@@ -49,7 +49,8 @@ export function registerIpcHandlers(store: DataStore, rotation: RotationService)
   })
 
   // ---------- sources ----------
-  ipcMain.handle('sources:search', async (_event, params: SearchParams) => {
+  ipcMain.handle('sources:search', async (event: Electron.IpcMainInvokeEvent, params: SearchParams) => {
+    const requestId = typeof params?.requestId === 'string' ? params.requestId : ''
     const query: SearchParams = {
       query: typeof params?.query === 'string' ? params.query : '',
       page: Number.isFinite(params?.page) ? Number(params.page) : 1,
@@ -58,7 +59,19 @@ export function registerIpcHandlers(store: DataStore, rotation: RotationService)
       orientation: params?.orientation ?? store.getSettings().orientation,
       minResolution: store.getSettings().minResolution,
     }
-    return searchAll(query, context())
+
+    // Stream each catalog's hits to the grid as they arrive; only the first
+    // page streams, since later pages are appended to what is already shown.
+    const stream =
+      requestId && query.page === 1
+        ? (items: Wallpaper[]) => {
+            if (!event.sender.isDestroyed()) {
+              event.sender.send('sources:partial', { requestId, items })
+            }
+          }
+        : undefined
+
+    return searchAll(query, context(), stream)
   })
 
   ipcMain.handle('sources:test', async (_event, source: SourceId) => testSource(source, context()))

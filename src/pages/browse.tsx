@@ -4,11 +4,9 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { WallpaperGrid } from '@/components/wallpaper/wallpaper-grid'
 import { useBrowseStore } from '@/store/useBrowseStore'
-import { useSettingsStore } from '@/store/useSettingsStore'
 import { useUiStore } from '@/store/useUiStore'
 import { cn } from '@/utils/cn'
-import { SOURCE_META } from '@/types/wallpaper'
-import type { Orientation, SourceId } from '@/types/wallpaper'
+import type { Orientation } from '@/types/wallpaper'
 
 const CATEGORIES = ['Nature', 'Abstract', 'Minimal', 'Space', 'City', 'Ocean', 'Mountains', 'Neon', 'Textures', 'Anime']
 
@@ -32,49 +30,20 @@ export function BrowsePage() {
     loadMore,
     orientation,
     setOrientation,
-    sourceFilter,
-    setSourceFilter,
   } = useBrowseStore()
-  const settings = useSettingsStore((state) => state.settings)
   const setPage = useUiStore((state) => state.setPage)
 
   useEffect(() => {
     if (!initialised) void search('')
   }, [initialised, search])
 
-  const enabledSources = settings?.enabledSources ?? ['wallhaven', 'commons']
-  const sources: Array<{ id: SourceId | 'all'; label: string }> = [
-    { id: 'all', label: 'All sources' },
-    ...enabledSources.map((id) => ({ id, label: SOURCE_META[id].label })),
-  ]
-
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-baseline gap-2.5">
-          <h1 className="text-[17px] font-semibold tracking-tight text-white">{query ? query : 'Explore'}</h1>
-          <span className="text-[11.5px] tabular-nums text-subtle">
-            {loading ? 'searching…' : `${items.length} wallpapers`}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-0.5 rounded-lg border border-hairline bg-white/[0.02] p-0.5">
-          {sources.map((source) => (
-            <button
-              key={source.id}
-              type="button"
-              onClick={() => void setSourceFilter(source.id)}
-              className={cn(
-                'h-7 rounded-[6px] px-2.5 text-[11px] transition-colors duration-150',
-                sourceFilter === source.id
-                  ? 'bg-white/[0.08] font-medium text-white'
-                  : 'text-white/45 hover:text-white/75',
-              )}
-            >
-              {source.label}
-            </button>
-          ))}
-        </div>
+      <div className="flex items-baseline gap-2.5">
+        <h1 className="text-[17px] font-semibold tracking-tight text-white">{query ? query : 'Explore'}</h1>
+        <span className="text-[11.5px] tabular-nums text-subtle">
+          {loading ? 'searching…' : `${items.length} wallpapers`}
+        </span>
       </div>
 
       <div className="flex items-center justify-between gap-3">
@@ -128,13 +97,6 @@ export function BrowsePage() {
         </div>
       </div>
 
-      {errors.length > 0 && items.length > 0 ? (
-        <p className="text-[11px] text-subtle">
-          {errors[0].message}
-          {errors.length > 1 ? ` (+${errors.length - 1} more)` : ''}
-        </p>
-      ) : null}
-
       <WallpaperGrid
         wallpapers={items}
         loading={loading}
@@ -143,9 +105,11 @@ export function BrowsePage() {
             illustration="search"
             title={query ? 'No matches' : 'Nothing loaded'}
             description={
-              query
-                ? `Nothing for “${query}” in the selected sources. Try a different keyword or switch sources.`
-                : 'Check your connection or enable another source in Settings.'
+              errors.length > 0
+                ? errors[0].message
+                : query
+                  ? `Nothing for “${query}” in any source. Try a different keyword.`
+                  : 'Check your connection or enable another source in Settings.'
             }
             action={
               <div className="flex items-center gap-2">
