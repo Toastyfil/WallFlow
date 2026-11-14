@@ -6,8 +6,9 @@ export type SourceId =
   | 'safebooru'
   | 'deviantart'
   | 'openverse'
+  | 'local'
   | 'custom'
-export type BuiltInSourceId = Exclude<SourceId, 'custom'>
+export type BuiltInSourceId = Exclude<SourceId, 'custom' | 'local'>
 
 /** Catalogs shipped with the app, in the order Settings lists them. */
 export const BUILT_IN_SOURCE_IDS: BuiltInSourceId[] = [
@@ -201,6 +202,12 @@ export const SOURCE_META: Record<
     label: 'Bing daily',
     blurb: 'One curated 4K landscape a day',
     catalog: '8',
+    requiresKey: false,
+  },
+  local: {
+    label: 'Local files',
+    blurb: 'Wallpapers from your own disk',
+    catalog: '—',
     requiresKey: false,
   },
   custom: {

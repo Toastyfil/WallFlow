@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { ActiveWallpaper, Wallpaper } from '@/types/wallpaper'
 
-export type Page = 'browse' | 'collections' | 'favorites' | 'settings'
+export type Page = 'browse' | 'collections' | 'favorites' | 'local' | 'settings'
 
 interface UiState {
   page: Page

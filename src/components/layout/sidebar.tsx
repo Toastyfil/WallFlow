@@ -1,4 +1,4 @@
-import { Heart, Layers, LayoutGrid, Settings2, Timer } from 'lucide-react'
+import { FolderOpen, Heart, Layers, LayoutGrid, Settings2, Timer } from 'lucide-react'
 import { useLibraryStore } from '@/store/useLibraryStore'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { useUiStore } from '@/store/useUiStore'
@@ -10,6 +10,7 @@ const NAV: Array<{ id: Page; label: string; icon: typeof LayoutGrid }> = [
   { id: 'browse', label: 'Browse', icon: LayoutGrid },
   { id: 'collections', label: 'Collections', icon: Layers },
   { id: 'favorites', label: 'Favorites', icon: Heart },
+  { id: 'local', label: 'Local files', icon: FolderOpen },
   { id: 'settings', label: 'Settings', icon: Settings2 },
 ]
 

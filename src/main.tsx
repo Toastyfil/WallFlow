@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import '@fontsource-variable/inter'
 import './index.css'
+import './tauri-bridge'
 import App from './App'
 import { applyTheme, cachedTheme } from './utils/themes'
 

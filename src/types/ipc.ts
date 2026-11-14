@@ -29,6 +29,11 @@ export interface SearchPartial {
   items: Wallpaper[]
 }
 
+export interface LocalImportResult {
+  added: number
+  items: Wallpaper[]
+}
+
 export interface WallFlowApi {
   search(params: SearchParams): Promise<SearchResult>
   /** Fires as each catalog answers, before the final search result arrives. */
@@ -83,5 +88,13 @@ export interface WallFlowApi {
     info(): Promise<AppInfo>
     openExternal(url: string): Promise<void>
     openCacheFolder(): Promise<void>
+  }
+
+  /** Wallpapers the user imported from their own disk (Rust build only). */
+  local?: {
+    list(): Promise<Wallpaper[]>
+    addFiles(): Promise<LocalImportResult | null>
+    addFolder(): Promise<LocalImportResult | null>
+    remove(id: string): Promise<Wallpaper[]>
   }
 }

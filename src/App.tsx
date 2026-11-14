@@ -8,6 +8,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { BrowsePage } from '@/pages/browse'
 import { CollectionsPage } from '@/pages/collections'
 import { FavoritesPage } from '@/pages/favorites'
+import { LocalPage } from '@/pages/local'
 import { SettingsPage } from '@/pages/settings'
 import { useLibraryStore } from '@/store/useLibraryStore'
 import { useSettingsStore } from '@/store/useSettingsStore'
@@ -46,6 +47,7 @@ export default function App() {
               {page === 'browse' ? <BrowsePage /> : null}
               {page === 'collections' ? <CollectionsPage /> : null}
               {page === 'favorites' ? <FavoritesPage /> : null}
+              {page === 'local' ? <LocalPage /> : null}
               {page === 'settings' ? <SettingsPage /> : null}
             </div>
           </main>
