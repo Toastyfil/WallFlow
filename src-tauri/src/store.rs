@@ -349,7 +349,7 @@ fn deep_merge(base: Value, patch: Value) -> Value {
     }
 }
 
-/// Mirrors normalizeSettings() in the Electron build so old data keeps working.
+/// Mirrors the older normalizeSettings() shape so existing data keeps working.
 pub fn normalize(raw: Value) -> Settings {
     let input = raw.as_object().cloned().unwrap_or_default();
     let defaults = Settings::default();

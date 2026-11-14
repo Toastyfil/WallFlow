@@ -418,7 +418,7 @@ fn display_set(mode: Value) -> Value {
 fn app_info(app: AppHandle) -> Value {
     json!({
         "version": app.package_info().version.to_string(),
-        "electron": "rust + tauri",
+        "engine": "Rust + Tauri 2",
         "platform": "win32",
         "storage": "json",
     })

@@ -1,6 +1,6 @@
 /**
- * Tauri bridge: reproduces the Electron preload's `window.wallflow` API so the
- * React UI runs unchanged on top of the Rust backend.
+ * Tauri bridge: exposes the `window.wallflow` API the React UI talks to, backed
+ * by the Rust commands in src-tauri.
  */
 import { convertFileSrc, invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'

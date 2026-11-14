@@ -35,7 +35,7 @@ impl Hidden for std::process::Command {
     }
 }
 
-/// "Fill" style, exactly like the Electron build set via PowerShell.
+/// "Fill" style, so the picture always covers the desktop.
 fn set_fill_style() {
     let _ = run(
         "reg",

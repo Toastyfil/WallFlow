@@ -2,7 +2,7 @@
 
 A small, fast Windows wallpaper browser — search a million-plus wallpapers, preview them full screen, and set them on your desktop in one click.
 
-Built with Electron + React + Tailwind, packaged with electron-builder.
+Built with **Rust** (Tauri 2) for the desktop backend and **React + Tailwind** for the interface. No Electron, no bundled browser: the window is the system WebView2 and all fetching, storage and wallpaper work happens in Rust.
 
 ![Explore](screenshots/explore-top.jpg)
 
@@ -12,11 +12,10 @@ Built with Electron + React + Tailwind, packaged with electron-builder.
 - **Merged sources** — Wallhaven, Wikimedia, Konachan, Safebooru, DeviantArt, Bing's daily picks and your own feeds are searched together and streamed into one feed as each answers
 - **Preview** — full-screen preview with resolution/author metadata before you commit
 - **Apply** — downloads the full-resolution image and sets it as the real Windows wallpaper
-- **Video wallpapers** — MP4/WebM loops play in a borderless, click-through window over the desktop
-- **Favorites & collections** — saved locally in SQLite
+- **Local wallpapers** — import single images or a whole folder (subfolders included) and apply them straight from disk
+- **Favorites & collections** — saved locally in `%APPDATA%/WallFlow/wallflow-data.json`
 - **Auto-rotate** — cycle a collection or your favorites every 5–240 minutes
-- **Display resolution** — list the modes your monitor reports and switch resolution from the app
-- **Themes** — six dark palettes (Midnight, Slate, Graphite, Plum, Moss, Ember) that also recolour the native title bar
+- **Themes** — six dark palettes (Midnight, Slate, Graphite, Plum, Moss, Ember); the window frame is painted black to match
 - **Custom sources** — add RSS feeds or a direct image/video URL
 
 ## Where the wallpapers come from
@@ -40,74 +39,66 @@ feed. Konachan, Safebooru, DeviantArt and Bing are on by default, and existing i
 automatically on first launch. Openverse is off by default because [its anonymous
 tier](https://api.openverse.org/v1/) allows only 20 results per page and roughly 200 requests a day.
 
-Earlier drafts also listed Unsplash, Pexels and Pixabay. Pexels and Pixabay require a personal
-API key for every user, and Unsplash's keyless `napi` endpoint is bot-gated (401), so the app ships
-with keyless catalogs only. Adding a keyed source is one file in `src/services/` plus one entry in
-`src/types/wallpaper.ts` and the client registry in `src/services/index.ts`.
+Pexels and Pixabay require a personal API key for every user, and Unsplash's keyless `napi` endpoint
+is bot-gated (401), so the app ships with keyless catalogs only. Adding a keyed source is one function
+in `src-tauri/src/sources.rs` plus one entry in that file's match and one label in
+`src/types/wallpaper.ts`.
 
 ## Requirements
 
-- Windows 10/11 (x64)
-- Node.js 20+ (developed on Node 24)
+- Windows 10/11 (x64) with the WebView2 runtime (preinstalled on Windows 11)
+- Node.js 20+ for the React interface
+- Rust (stable) with the MSVC toolchain and Windows SDK for the desktop backend
 
 ## Commands
 
 ```bash
-npm install       # install dependencies
-npm run dev       # Vite + Electron with hot reload
-npm run build     # build the renderer + main process, then package dist/WallFlow-<version>-setup.exe
-npm run typecheck # renderer and main-process TypeScript checks
-npm run icon      # regenerate build/icon.png and build/icon.ico
+npm install          # interface dependencies
+npm run dev          # Tauri dev window with the Vite dev server
+npm run build        # releases the app and bundles the NSIS installer
+npm run build:renderer  # only rebuild the React bundle into dist/
+npm run typecheck    # React/TypeScript checks
+npm run icon         # regenerate build/icon.png and build/icon.ico
 ```
 
-`npm run build` writes the NSIS installer to `dist/`. It is a per-user install with a desktop
-shortcut. The clean, ready-to-ship copy of the installer lives in `installer/` (only the `.exe`,
-nothing else).
+`npm run build` (which runs `tauri build`) writes the installer to
+`src-tauri/target/release/bundle/nsis/`. It is a per-user install with a desktop shortcut.
+
+On this machine the Tauri CLI needs the MSVC environment, so `run-tauri.bat build` is the shortcut
+that loads `vcvars64.bat` first.
 
 ## Project structure
 
 ```
-src/
-  components/
-    layout/        sidebar, top bar
-    wallpaper/     card, grid, preview dialog, save dialog
-    collections/   collection card
-    settings/      add-source dialog
-    ui/            button, input, dialog, select, switch, slider, toast, …
-  pages/           browse, collections, favorites, settings
-  services/        source clients (wallhaven, commons, bing, konachan, safebooru, deviantart, openverse, custom) — main process only
-  store/           zustand stores (browse, library, settings, ui, toasts)
-  types/           wallpaper + IPC contracts
-  utils/           cn, formatters, apply hook, theme palettes
-electron/
-  main.ts          app lifecycle and window
-  preload.ts       context-isolated `window.wallflow` bridge
-  ipc.ts           IPC handlers
-  store/           SQLite store with JSON fallback
-  wallpaper/       Win32 apply, video window, player page, shared service
-  display/         display-mode enumeration and ChangeDisplaySettings
-  utils/           media cache downloads
-  rotation.ts      auto-rotate scheduler
-scripts/           dev runner, esbuild build, icon generator
+src/                  React interface
+  components/         layout (sidebar, top bar), wallpaper card/grid/preview, dialogs, ui kit
+  pages/              browse, collections, favorites, local, settings
+  store/              zustand stores (browse, library, settings, ui, toasts)
+  types/              wallpaper + bridge contracts
+  utils/              cn, formatters, apply hook, theme palettes
+  tauri-bridge.ts     window.wallflow API backed by Tauri commands
+src-tauri/            Rust backend
+  src/main.rs         Tauri commands, window setup, rotation loop
+  src/sources.rs      the six catalogs plus custom RSS/direct feeds
+  src/apply.rs        Win32 wallpaper apply + downloads
+  src/store.rs        data model and JSON persistence
+  tauri.conf.json     window, bundle and permission configuration
+  capabilities/       webview permissions (dialog, core)
 ```
 
 ## How it works
 
-- **Fetching happens in the main process.** The renderer never touches remote APIs, so there are no
-  CORS problems and the renderer's CSP can stay strict (`script-src 'self'`). Results stream back per
-  catalog over `sources:partial`, so the grid paints in well under a second while slower sources keep
-  loading; any single source that takes longer than 4 seconds is skipped for that page.
-- **Applying images** uses `User32!SystemParametersInfo(SPI_SETDESKWALLPAPER)` through PowerShell and
-  sets the wallpaper style to "Fill". That is the same Win32 mechanism the `wallpaper` npm package
-  uses, but without a native addon to rebuild or bundle.
-- **Applying videos** downloads the loop into the app cache and plays it in a frameless
-  `BrowserWindow` pinned to the work area with `setIgnoreMouseEvents(true)` and
-  `setAlwaysOnTop(false)`. A still frame is set as the actual desktop wallpaper first.
-  *Limitation:* the window sits above the desktop icons and below normal windows. Truly rendering
-  behind the icons requires parenting to Explorer's `WorkerW` window in native code.
-- **Storage** lives in `%APPDATA%/WallFlow`: `wallflow.db` (better-sqlite3, N-API prebuild) with an
-  automatic JSON fallback at `wallflow-data.json` if the native module can't load. Downloaded media
-  goes to `wallpaper-cache/`.
+- **Fetching happens in Rust.** Each catalog runs on its own thread and results stream back to the
+  interface over the `sources:partial` event, so the grid paints in well under a second while slower
+  sources keep loading. Every command runs off the UI thread, so searching or applying never freezes
+  the window.
+- **Applying images** downloads the file, then calls
+  `User32!SystemParametersInfo(SPI_SETDESKWALLPAPER)` directly, with `WallpaperStyle=10` so the
+  picture always fills the desktop.
+- **Storage** is a single JSON file at `%APPDATA%/WallFlow/wallflow-data.json`, written as you change
+  things. Downloaded images go to the app cache folder, reachable from **Settings → About**.
+- **Local files** are read from wherever you keep them and shown through Tauri's asset protocol, so
+  nothing is copied.
 
 ## Notes
 
@@ -117,6 +108,10 @@ scripts/           dev runner, esbuild build, icon generator
   wide.
 - Images are only shown when they are big enough to be a wallpaper: Wallhaven asks for 1920×1080+,
   the boorus drop anything under 1600 px wide, and Bing serves its 4K UHD file.
-- The app is single-instance and remembers the last applied wallpaper ("Applied 2m ago" in the
-  sidebar).
 - `Ctrl K` focuses the search box, `Esc` closes the preview.
+- **Not ported yet:** video wallpapers (MP4/WebM loops over the desktop) and switching the monitor
+  resolution from Settings. Both report a clear message instead of failing silently.
+
+## License
+
+MIT

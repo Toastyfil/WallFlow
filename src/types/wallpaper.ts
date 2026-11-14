@@ -131,7 +131,8 @@ export interface RotationState {
 
 export interface AppInfo {
   version: string
-  electron: string
+  /** Runtime the desktop shell is built on, e.g. "Rust + Tauri 2". */
+  engine: string
   platform: string
   storage: 'sqlite' | 'json'
 }

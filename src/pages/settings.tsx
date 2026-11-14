@@ -440,7 +440,7 @@ export function SettingsPage() {
       </Section>
 
       <Section title="About">
-        <Row title="Version" description={info ? `Electron ${info.electron} · ${info.platform}` : undefined}>
+        <Row title="Version" description={info ? `${info.engine} · ${info.platform}` : undefined}>
           <span className="text-[11.5px] text-white/60">v{info?.version ?? '1.0.0'}</span>
         </Row>
         <Row title="Library storage" description="Favorites, collections and settings.">
